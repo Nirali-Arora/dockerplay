@@ -1,0 +1,47 @@
+- hosts: localhost
+  vars_prompt:
+  - name: container_name
+    prompt: "docker container name:"
+    private: no
+  tasks: 
+  - name: setting up docker yum conf
+    yum_repository:
+            name: docker
+            description: yum conf for docker
+            state: present
+            baseurl: https://download.docker.com/linux/centos/7/x86_64/stable/
+            gpgcheck: no
+
+  - command: "yum install docker-ce  --nobest  -y"
+
+  - name: starting docker service
+    service:
+            name: docker
+            state: started
+            enabled: yes
+  - name: setting python sdk
+    command: pip3 install docker
+
+  - name: downloading httpd image from dockerhub
+    docker_image:
+            name: centos
+            source: pull
+  
+  - docker_container:
+          name: "{{ container_name }}"
+          image: "centos"
+          state: started
+          interactive: yes
+          detach: yes
+          tty: yes
+
+  - docker_container_info:
+          name: "{{ container_name }}"
+    register: docker_info
+  - debug: 
+          var: docker_info 
+  - name: "retrieving IP dynamically and updating in the inventory"
+    template:
+          src: "/root/ip1.txt"
+          dest: "/root/dockerip.txt"
+
